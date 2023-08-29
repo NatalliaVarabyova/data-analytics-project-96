@@ -1,4 +1,7 @@
-CREATE TABLE last_paid_click AS
+/* Step 2. Create */
+
+
+CREATE VIEW last_paid_click AS
 WITH tab AS (
     SELECT DISTINCT ON (s.visitor_id)
         s.visitor_id,
