@@ -23,13 +23,13 @@ tab2 AS (
         a.visitor_id,
         a.visit_date,
         a.utm_source,
+        coalesce(b.utm_medium, 'organic') AS utm_medium,
         b.utm_campaign,
         b.lead_id,
         b.created_at,
         b.amount,
         b.closing_reason,
-        b.status_id,
-        coalesce(b.utm_medium, 'organic') AS utm_medium
+        b.status_id
     FROM tab1 AS a
     LEFT JOIN tab1 AS b
         ON a.visitor_id = b.visitor_id AND b.utm_medium != 'organic'
