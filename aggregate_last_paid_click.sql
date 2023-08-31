@@ -23,14 +23,12 @@ WITH tab AS (
             AND lp.utm_source = vk.utm_source
             AND lp.utm_medium = vk.utm_medium
             AND lp.utm_campaign = vk.utm_campaign
-            AND lp.utm_content = vk.utm_content
     LEFT JOIN ya_ads AS ya
         ON
             date_trunc('day', lp.visit_date) = ya.campaign_date
             AND lp.utm_source = ya.utm_source
             AND lp.utm_medium = ya.utm_medium
             AND lp.utm_campaign = ya.utm_campaign
-            AND lp.utm_content = ya.utm_content
 )
 
 SELECT *
