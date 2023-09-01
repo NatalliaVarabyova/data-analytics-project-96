@@ -1,39 +1,55 @@
 /* Step3.1. View creation*/
 
 CREATE VIEW last_paid_costs_nv AS
-WITH tab AS (
+WITH vk_costs AS (
     SELECT
-        lp.visitor_id,
-        lp.utm_source,
-        lp.utm_medium,
-        lp.utm_campaign,
-        lp.lead_id,
-        lp.amount,
-        lp.status_id,
-        vk.daily_spent AS vk_daily_spent,
-        ya.daily_spent AS ya_daily_spent,
-        date_trunc('day', lp.visit_date) AS visit_date,
-        row_number()
-            OVER (PARTITION BY lp.visitor_id ORDER BY lp.visit_date)
-        AS rn
-    FROM last_paid_nv AS lp
-    LEFT JOIN vk_ads AS vk
-        ON
-            date_trunc('day', lp.visit_date) = vk.campaign_date
-            AND lp.utm_source = vk.utm_source
-            AND lp.utm_medium = vk.utm_medium
-            AND lp.utm_campaign = vk.utm_campaign
-    LEFT JOIN ya_ads AS ya
-        ON
-            date_trunc('day', lp.visit_date) = ya.campaign_date
-            AND lp.utm_source = ya.utm_source
-            AND lp.utm_medium = ya.utm_medium
-            AND lp.utm_campaign = ya.utm_campaign
+        campaign_date,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        sum(daily_spent) AS vk_daily_spent
+    FROM vk_ads
+    GROUP BY 1, 2, 3, 4
+    ORDER BY 1, 2, 3, 4
+),
+
+ya_costs AS (
+    SELECT
+        campaign_date,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        sum(daily_spent) AS ya_daily_spent
+    FROM ya_ads
+    GROUP BY 1, 2, 3, 4
+    ORDER BY 1, 2, 3, 4
 )
 
-SELECT *
-FROM tab
-WHERE rn = 1;
+SELECT
+    lp.visitor_id,
+    date_trunc('day', lp.visit_date) AS visit_date,
+    lp.utm_source,
+    lp.utm_medium,
+    lp.utm_campaign,
+    lp.lead_id,
+    lp.amount,
+    lp.status_id,
+    vk.vk_daily_spent,
+    ya.ya_daily_spent
+FROM last_paid_nv AS lp
+LEFT JOIN vk_costs AS vk
+    ON
+        date_trunc('day', lp.visit_date) = vk.campaign_date
+        AND lp.utm_source = vk.utm_source
+        AND lp.utm_medium = vk.utm_medium
+        AND lp.utm_campaign = vk.utm_campaign
+LEFT JOIN ya_costs AS ya
+    ON
+        date_trunc('day', lp.visit_date) = ya.campaign_date
+        AND lp.utm_source = ya.utm_source
+        AND lp.utm_medium = ya.utm_medium
+        AND lp.utm_campaign = ya.utm_campaign;
+
 
 /* Step 3.2. Data aggregation*/
 
@@ -43,7 +59,7 @@ SELECT
     utm_medium,
     utm_campaign,
     count(visitor_id) AS visitors_count,
-    sum(CASE
+    max(CASE
         WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
         WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
         ELSE 0
@@ -69,7 +85,7 @@ WITH tab AS (
         utm_medium,
         utm_campaign,
         count(visitor_id) AS visitors_count,
-        sum(CASE
+        max(CASE
             WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
             WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
             ELSE 0
