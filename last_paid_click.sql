@@ -1,4 +1,4 @@
-/* Step 2.1. View creation */
+/* Шаг 2.1. Создание view. */
 
 CREATE VIEW last_paid_nv AS
 WITH tab1 AS (
@@ -42,7 +42,7 @@ SELECT *
 FROM tab2
 ORDER BY date_trunc('day', visit_date), utm_source, utm_medium, utm_campaign;
 
-/*Step 2.2. Selection top-10 paid sales */
+/*Step 2.2. 10 самых выгодных продаж */
 
 SELECT
     visitor_id,

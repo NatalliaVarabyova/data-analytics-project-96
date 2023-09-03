@@ -1,4 +1,4 @@
-/* Step3.1. View creation*/
+/* Шаг 3.1. Создание view с рекламными расходами */
 
 CREATE VIEW last_paid_costs_nv AS
 WITH vk_costs AS (
@@ -51,7 +51,7 @@ LEFT JOIN ya_costs AS ya
         AND lp.utm_campaign = ya.utm_campaign;
 
 
-/* Step 3.2. Data aggregation*/
+/* Шаг 3.2. Агрегация данных */
 
 SELECT
     to_char(visit_date, 'yyyy-mm-dd') AS visit_date,
@@ -76,7 +76,7 @@ FROM last_paid_costs_nv
 GROUP BY 1, 2, 3, 4
 ORDER BY 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC;
 
-/* Step 3.3 Top-15 purchases count selection */
+/* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж в первый день. */
 
 WITH tab AS (
     SELECT
