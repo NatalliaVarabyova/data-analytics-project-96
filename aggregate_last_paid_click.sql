@@ -27,7 +27,6 @@ ya_costs AS (
 
 SELECT
     lp.visitor_id,
-    date_trunc('day', lp.visit_date) AS visit_date,
     lp.utm_source,
     lp.utm_medium,
     lp.utm_campaign,
@@ -35,7 +34,8 @@ SELECT
     lp.amount,
     lp.status_id,
     vk.vk_daily_spent,
-    ya.ya_daily_spent
+    ya.ya_daily_spent,
+    date_trunc('day', lp.visit_date) AS visit_date
 FROM last_paid_nv AS lp
 LEFT JOIN vk_costs AS vk
     ON
@@ -74,9 +74,9 @@ SELECT
     END) AS revenue
 FROM last_paid_costs_nv
 GROUP BY 1, 2, 3, 4
-ORDER BY 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC;
+ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC;
 
-/* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж в первый день. */
+/* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж. */
 
 WITH tab AS (
     SELECT
@@ -100,11 +100,10 @@ WITH tab AS (
         END) AS revenue
     FROM last_paid_costs_nv
     GROUP BY 1, 2, 3, 4
-    ORDER BY 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC
+    ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC
 )
 
 SELECT *
 FROM tab
 ORDER BY purchases_count DESC
 LIMIT 15;
-

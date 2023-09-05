@@ -17,6 +17,7 @@ WITH tab1 AS (
     FROM sessions AS s
     LEFT JOIN leads AS l
         ON s.visitor_id = l.visitor_id
+        and s.visit_date <= l.created_at  -- условие включения лидов, если пользователь сконвертился в лида после (во время) визита
 ),
 
 tab2 AS (
@@ -40,7 +41,12 @@ tab2 AS (
 
 SELECT *
 FROM tab2
-ORDER BY date_trunc('day', visit_date), utm_source, utm_medium, utm_campaign;
+ORDER BY
+    amount DESC NULLS LAST,
+    date_trunc('day', visit_date) ASC,
+    utm_source ASC,
+    utm_medium ASC,
+    utm_campaign ASC;
 
 /*Step 2.2. 10 самых выгодных продаж */
 
@@ -56,6 +62,5 @@ SELECT
     closing_reason,
     status_id
 FROM last_paid_nv
-ORDER BY amount DESC NULLS LAST
 LIMIT 10;
 
