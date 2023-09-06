@@ -74,7 +74,7 @@ FROM sessions
 GROUP BY 1, 2
 ORDER BY 2 ASC, 3 DESC;
 
-/* Шаг 4.6. Расчёт количества посетителей сайта по source / medium / campaign за июнь. Файл daily_visitors_count_from_campaign */
+/* Шаг 4.6. Расчёт количества посетителей сайта по source / medium / campaign за июнь. Файл daily_visitors_count_from_campaign.csv */
 
 SELECT
     source,
@@ -85,7 +85,7 @@ FROM sessions
 GROUP BY 1, 2, 3
 ORDER BY 4 DESC;
 
-/* Шаг 4.7. Расчёт количества посетителей сайта по source / medium / campaign по дням. Файл daily_visitors_count_from_campaign */
+/* Шаг 4.7. Расчёт количества посетителей сайта по source / medium / campaign по дням. Файл daily_visitors_count_from_campaign.csv */
 
 SELECT
     source,
@@ -97,7 +97,7 @@ FROM sessions
 GROUP BY 1, 2, 3, 4
 ORDER BY 4 ASC, 5 DESC;
 
-/* Шаг 4.8. Расчёт количества посетителей сайта по source / medium / campaign в неделю. Файл weekly_visitors_count_from_campaign */
+/* Шаг 4.8. Расчёт количества посетителей сайта по source / medium / campaign в неделю. Файл weekly_visitors_count_from_campaign.csv */
 
 SELECT
     source,
@@ -124,7 +124,7 @@ FROM sessions
 GROUP BY 1, 2, 3, 4
 ORDER BY 4 ASC, 5 DESC;
 
-/* Шаг 4.9. Расчёт количества посетителей сайта по source / medium за июнь. Файл monthly_visitors_count_from_medium */
+/* Шаг 4.9. Расчёт количества посетителей сайта по source / medium за июнь. Файл monthly_visitors_count_from_medium.csv */
 
 SELECT
     source,
@@ -137,7 +137,7 @@ FROM sessions
 GROUP BY 1, 2
 ORDER BY 3 DESC;
 
-/* Шаг 4.10. Расчёт количества посетителей сайта по source / medium по дням. Файл daily_visitors_count_from_medium */
+/* Шаг 4.10. Расчёт количества посетителей сайта по source / medium по дням. Файл daily_visitors_count_from_medium.csv */
 
 SELECT
     source,
@@ -151,7 +151,7 @@ FROM sessions
 GROUP BY 1, 2, 3
 ORDER BY 3 ASC, 4 DESC;
 
-/* Шаг 4.11. Расчёт количества посетителей сайта по source / medium в неделю. Файл weekly_visitors_count_from_medium */
+/* Шаг 4.11. Расчёт количества посетителей сайта по source / medium в неделю. Файл weekly_visitors_count_from_medium.csv */
 
 SELECT
     source,
@@ -381,3 +381,104 @@ INNER JOIN sessions AS s
 GROUP BY 1, 2, 3
 ORDER BY 3 ASC, 4 DESC;
 
+/* Шаг 4.23. Расчёт конверсии из клика в лид по source. Файл lcr_from_source.csv */
+
+SELECT
+    s.source,
+    round(count(l.lead_id) * 100.00 / count(s.visitor_id), 2) AS lcr
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1
+ORDER BY 2 DESC;
+
+/* Шаг 4.24. Расчёт конверсии из клика в лид по source / medium. Файл lcr_from_medium.csv */
+
+SELECT
+    s.source,
+    s.medium,
+    round(count(l.lead_id) * 100.00 / count(s.visitor_id), 2) AS lcr
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+
+/* Шаг 4.25. Расчёт конверсии из клика в лид по source / medium / campaign. Файл lcr_from_campaign.csv */
+
+SELECT
+    s.source,
+    s.medium,
+    s.campaign,
+    round(count(l.lead_id) * 100.00 / count(s.visitor_id), 2) AS lcr
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1, 2, 3
+ORDER BY 4 DESC;
+
+/* Шаг 4.26. Расчёт конверсии из лида в клиента по source. Файл lead_client_from_source.csv */
+
+SELECT
+    s.source,
+    round(
+        sum(CASE WHEN l.status_id = 142 THEN 1 ELSE 0 END)
+        * 100.00
+        / count(l.lead_id),
+        2
+    ) AS lead_to_client_rate
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1
+HAVING count(l.lead_id) > 0
+ORDER BY 2 DESC;
+
+/* Шаг 4.27. Расчёт конверсии из лида в клиента по source / medium. Файл lead_client_from_medium.csv */
+
+SELECT
+    s.source,
+    s.medium,
+    round(
+        sum(CASE WHEN l.status_id = 142 THEN 1 ELSE 0 END)
+        * 100.00
+        / count(l.lead_id),
+        2
+    ) AS lead_to_client_rate
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1, 2
+HAVING count(l.lead_id) > 0
+ORDER BY 3 DESC;
+
+/* Шаг 4.28. Расчёт конверсии из лида в клиента по source / medium. Файл lead_client_from_campaign.csv */
+
+SELECT
+    s.source,
+    s.medium,
+    s.campaign,
+    round(
+        sum(CASE WHEN l.status_id = 142 THEN 1 ELSE 0 END)
+        * 100.00
+        / count(l.lead_id),
+        2
+    ) AS lead_to_client_rate
+FROM sessions AS s
+LEFT JOIN leads AS l
+    ON
+        s.visitor_id = l.visitor_id
+        AND s.visit_date <= l.created_at
+GROUP BY 1, 2, 3
+HAVING count(l.lead_id) > 0
+ORDER BY 4 DESC;
