@@ -608,7 +608,87 @@ FROM last_paid_costs_nv
 GROUP BY 1
 ORDER BY 1;
 
-/* Шаг 4.35. Расчёт CPL по атрибуции last paid click. Файл monthly_cpl.scv */
+/* Шаг 4.35. Расчёт CPU по атрибуции last paid click по source / medium / campaign. Файл monthly_cpu_campaign.scv */
+
+SELECT
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / count(DISTINCT visitor_id) AS monthly_cpu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 4 DESC;
+
+/* Шаг 4.36. Расчёт CPU по неделям по атрибуции last paid click по source / medium / campaign. Файл weekly_cpu_campaign.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / count(DISTINCT visitor_id), 2) AS cpu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC;
+
+/* Шаг 4.37. Расчёт CPU по дням по атрибуции last paid click по source / medium / campaign. Файл daily_cpu_campaign.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / count(DISTINCT visitor_id), 2) AS cpu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC;
+
+/* Шаг 4.38. Расчёт CPL по атрибуции last paid click. Файл monthly_cpl.scv */
 
 SELECT
     max(CASE
@@ -618,7 +698,7 @@ SELECT
     END) * 1.0 / count(DISTINCT lead_id) AS monthly_cpl
 FROM last_paid_costs_nv;
 
-/* Шаг 4.36. Расчёт CPL по неделям по атрибуции last paid click. Файл weekly_cpl.scv */
+/* Шаг 4.39. Расчёт CPL по неделям по атрибуции last paid click. Файл weekly_cpl.scv */
 
 SELECT
     CASE
@@ -645,7 +725,7 @@ SELECT
 FROM last_paid_costs_nv
 GROUP BY 1;
 
-/* Шаг 4.37. Расчёт CPL по дням по атрибуции last paid click. Файл daily_cpl.scv */
+/* Шаг 4.40. Расчёт CPL по дням по атрибуции last paid click. Файл daily_cpl.scv */
 
 SELECT
     to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
@@ -659,4 +739,435 @@ GROUP BY 1
 HAVING count(DISTINCT lead_id) > 0
 ORDER BY 1;
 
+/* Шаг 4.41. Расчёт CPL по атрибуции last paid click по source / medium / campaign. Файл monthly_cpl_campaign.scv */
 
+SELECT
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / count(DISTINCT lead_id), 2) AS monthly_cpl
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3
+HAVING
+    count(DISTINCT lead_id) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 4 DESC;
+
+/* Шаг 4.42. Расчёт CPL по неделям по атрибуции last paid click по source / medium / campaign. Файл weekly_cpl_campaign.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / count(DISTINCT lead_id), 2) AS cpl
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    count(DISTINCT lead_id) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC;
+
+/* Шаг 4.43. Расчёт CPL по дням по атрибуции last paid click по source / medium / campaign. Файл daily_cpl_campaign.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / (count(DISTINCT lead_id)), 2) AS cpl
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    count(DISTINCT lead_id) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC;
+
+/* Шаг 4.44. Расчёт CPPU по атрибуции last paid click. Файл monthly_cppu.scv */
+
+SELECT
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS monthly_cppu
+FROM last_paid_costs_nv;
+
+/* Шаг 4.45. Расчёт CPPU по неделям по атрибуции last paid click. Файл weekly_cppu.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS cppu
+FROM last_paid_costs_nv
+GROUP BY 1
+HAVING
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) > 0
+ORDER BY 1;
+
+/* Шаг 4.46. Расчёт CPPU по дням по атрибуции last paid click. Файл daily_cppu.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS cppu
+FROM last_paid_costs_nv
+GROUP BY 1
+HAVING
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) > 0
+ORDER BY 1;
+
+/* Шаг 4.47. Расчёт CPPU по атрибуции last paid click по source / medium / campaign. Файл monthly_cppu_campaign.scv */
+
+SELECT
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS cppu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3
+HAVING
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 4 DESC;
+
+/* Шаг 4.48. Расчёт CPPU по неделям по атрибуции last paid click по source / medium / campaign. Файл weekly_cppu_campaign.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS cppu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 5 DESC;
+
+/* Шаг 4.49. Расчёт CPPU по дням по атрибуции last paid click по source / medium / campaign. Файл daily_cppu_campaign.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round(max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) * 1.0 / sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END), 2) AS cppu
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) > 0
+    AND max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 5 DESC;
+
+/* Шаг 4.50. Расчёт ROI по атрибуции last paid click. Файл monthly_roi.scv */
+
+SELECT
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv;
+
+/* Шаг 4.51. Расчёт ROI по неделям по атрибуции last paid click. Файл weekly_roi.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv
+GROUP BY 1
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1;
+
+/* Шаг 4.52. Расчёт ROI по дням по атрибуции last paid click. Файл daily_roi.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv
+GROUP BY 1
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1;
+
+/* Шаг 4.53. Расчёт ROI по атрибуции last paid click по source / medium / campaign. Файл monthly_roi_campaign.scv */
+
+SELECT
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 4 DESC NULLS LAST;
+
+/* Шаг 4.54. Расчёт ROI по неделям по атрибуции last paid click по source / medium / campaign. Файл weekly_roi_campaign.scv */
+
+SELECT
+    CASE
+        WHEN to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-07' THEN '1 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-08'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-14'
+            THEN '2 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-15'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-21'
+            THEN '3 неделя'
+        WHEN
+            to_char(visit_date, 'YYYY-MM-DD') >= '2023-06-22'
+            AND to_char(visit_date, 'YYYY-MM-DD') <= '2023-06-28'
+            THEN '4 неделя'
+        ELSE '5 неделя (2 дня)'
+    END AS week_of_june,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC NULLS LAST;
+
+/* Шаг 4.55. Расчёт ROI по дням по атрибуции last paid click по source / medium / campaign. Файл daily_roi_campaign.scv */
+
+SELECT
+    to_char(visit_date, 'YYYY-MM-DD') AS visit_date,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    round((sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) - max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END)) * 100.0 / max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END), 2) AS roi
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+HAVING
+    max(CASE
+        WHEN vk_daily_spent IS NOT null THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT null THEN ya_daily_spent
+        ELSE 0
+    END) > 0
+ORDER BY 1 ASC, 5 DESC NULLS LAST;
