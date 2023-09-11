@@ -53,10 +53,10 @@ LEFT JOIN ya_costs AS ya
 
 SELECT
     to_char(visit_date, 'yyyy-mm-dd') AS visit_date,
+    count(visitor_id) AS visitors_count,
     utm_source,
     utm_medium,
     utm_campaign,
-    count(visitor_id) AS visitors_count,
     max(CASE
         WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
         WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
@@ -72,7 +72,7 @@ SELECT
     END) AS revenue
 FROM last_paid_costs_nv
 GROUP BY 1, 2, 3, 4
-ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC;
+ORDER BY 9 DESC NULLS LAST, 1 ASC, 2 DESC, 3 ASC, 4 ASC, 5 ASC;
 
 /* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж. */
 
