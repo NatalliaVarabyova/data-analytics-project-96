@@ -20,9 +20,7 @@ WITH tab1 AS (
 ),
 
 tab2 AS (
-    SELECT
-        DISTINCT ON (a.visitor_id)
-        a.visitor_id,
+    SELECT DISTINCT ON (a.visitor_id) a.visitor_id,
         coalesce(b.visit_date, a.visit_date) AS visit_date,
         coalesce(b.utm_source, a.utm_source) AS utm_source,
         coalesce(b.utm_medium, 'organic') AS utm_medium,
