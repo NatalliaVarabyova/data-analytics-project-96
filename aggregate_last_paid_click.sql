@@ -103,5 +103,4 @@ WITH tab AS (
 
 SELECT *
 FROM tab
-ORDER BY purchases_count DESC
 LIMIT 15;
