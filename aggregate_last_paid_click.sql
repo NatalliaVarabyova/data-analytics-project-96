@@ -10,7 +10,6 @@ WITH vk_costs AS (
         sum(daily_spent) AS vk_daily_spent
     FROM vk_ads
     GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2, 3, 4
 ),
 
 ya_costs AS (
@@ -22,10 +21,10 @@ ya_costs AS (
         sum(daily_spent) AS ya_daily_spent
     FROM ya_ads
     GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2, 3, 4
 )
 
 SELECT
+    date_trunc('day', lp.visit_date) AS visit_date
     lp.visitor_id,
     lp.utm_source,
     lp.utm_medium,
@@ -34,8 +33,7 @@ SELECT
     lp.amount,
     lp.status_id,
     vk.vk_daily_spent,
-    ya.ya_daily_spent,
-    date_trunc('day', lp.visit_date) AS visit_date
+    ya.ya_daily_spent
 FROM last_paid_nv AS lp
 LEFT JOIN vk_costs AS vk
     ON
