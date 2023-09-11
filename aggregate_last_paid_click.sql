@@ -24,7 +24,7 @@ ya_costs AS (
 )
 
 SELECT
-    to_char(visit_date, 'YYYY-MM-DD')::date AS visit_date,
+    to_char(lp.visit_date, 'YYYY-MM-DD')::date AS visit_date,
     lp.visitor_id,
     lp.utm_source,
     lp.utm_medium,
@@ -77,7 +77,7 @@ ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC;
 /* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж. */
 
 SELECT
-    to_char(visit_date, 'YYYY-MM-DD') :: date AS visit_date,
+    to_char(visit_date, 'YYYY-MM-DD')::date AS visit_date,
     utm_source,
     utm_medium,
     utm_campaign,
