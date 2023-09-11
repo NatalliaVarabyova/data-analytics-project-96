@@ -24,7 +24,7 @@ ya_costs AS (
 )
 
 SELECT
-    date_trunc('day', lp.visit_date) AS visit_date
+    date_trunc('day', lp.visit_date) AS visit_date,
     lp.visitor_id,
     lp.utm_source,
     lp.utm_medium,
