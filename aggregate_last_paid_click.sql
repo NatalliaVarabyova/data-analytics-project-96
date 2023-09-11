@@ -57,7 +57,7 @@ SELECT
     utm_medium,
     utm_campaign,
     count(visitor_id) AS visitors_count,
-   max(CASE
+    max(CASE
         WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
         WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
         ELSE 0
@@ -76,31 +76,26 @@ ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC
 
 /* Шаг 3.3. 15 кампаний, принёсших наибольшее количество продаж. */
 
-WITH tab AS (
-    SELECT
-        to_char(visit_date, 'yyyy-mm-dd') AS visit_date,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        count(visitor_id) AS visitors_count,
-        max(CASE
-            WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
-            WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
-            ELSE 0
-        END) AS total_cost,
-        count(lead_id) AS leads_count,
-        sum(CASE
-            WHEN status_id = 142 THEN 1
-            ELSE 0
-        END) AS purchases_count,
-        sum(CASE
-            WHEN status_id = 142 THEN coalesce(amount, 0)
-        END) AS revenue
-    FROM last_paid_costs_nv
-    GROUP BY 1, 2, 3, 4
-    ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC
-)
-
-SELECT *
-FROM tab
+SELECT
+    to_char(visit_date, 'yyyy-mm-dd') AS visit_date,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    count(visitor_id) AS visitors_count,
+    max(CASE
+        WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
+        WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
+        ELSE 0
+    END) AS total_cost,
+    count(lead_id) AS leads_count,
+    sum(CASE
+        WHEN status_id = 142 THEN 1
+        ELSE 0
+    END) AS purchases_count,
+    sum(CASE
+        WHEN status_id = 142 THEN coalesce(amount, 0)
+    END) AS revenue
+FROM last_paid_costs_nv
+GROUP BY 1, 2, 3, 4
+ORDER BY 9 DESC NULLS LAST, 1 ASC, 5 DESC, 2 ASC, 3 ASC, 4 ASC
 LIMIT 15;

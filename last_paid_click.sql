@@ -50,8 +50,8 @@ ORDER BY
 /*Step 2.2. 10 самых выгодных продаж */
 
 SELECT
-    visitor_id,
     visit_date,
+    visitor_id,
     utm_source,
     utm_medium,
     utm_campaign,
