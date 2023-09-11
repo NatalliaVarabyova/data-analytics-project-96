@@ -16,8 +16,7 @@ WITH tab1 AS (
         l.status_id
     FROM sessions AS s
     LEFT JOIN leads AS l
-        ON s.visitor_id = l.visitor_id
-        and s.visit_date <= l.created_at  -- условие включения лидов, если пользователь сконвертился в лида после (во время) визита
+        ON s.visitor_id = l.visitor_id AND s.visit_date <= l.created_at
 ),
 
 tab2 AS (
