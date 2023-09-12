@@ -309,7 +309,7 @@ ORDER BY
     t.funnel_metric;
 
 /* Шаг 4.17. Расчёт расходов на рекламу в динамике по source / medium / campaign.
-Дашборды: Общие расходы на рекламу, рублей; Расходы на рекламу по кампаниям. */
+Дашборды: Общие расходы на рекламу, рублей; Расходы на рекламу по кампаниям для vk; Расходы на рекламу по кампаниям для yandex. */
 
 SELECT
     date_trunc('day', campaign_date) AS visit_date,
@@ -577,7 +577,6 @@ WITH tab AS (
         ) < 200
     )
 ),
-
 tab1 AS (
     SELECT
         utm_source,
@@ -593,7 +592,6 @@ tab1 AS (
         (coalesce(revenue, 0) - total_cost != 0)
         OR (coalesce(revenue, 0) - total_cost = 0 AND total_cost > 0)
 ),
-
 tab2 AS (
     SELECT
         *,
@@ -605,7 +603,6 @@ tab2 AS (
         AS campaign_beginning
     FROM last_paid_costs_nv
 ),
-
 tab3 AS (
     SELECT DISTINCT ON (tab1.utm_source, tab1.utm_medium, tab1.utm_campaign)
         tab2.campaign_beginning,
@@ -624,15 +621,15 @@ tab3 AS (
             AND tab1.utm_medium = tab2.utm_medium
             AND tab1.utm_campaign = tab2.utm_campaign
 )
-
-SELECT tab3.*
+SELECT
+    tab3.*,
+    tab.roi
 FROM tab
 INNER JOIN tab3
     ON
         tab.utm_source = tab3.utm_source
         AND tab.utm_medium = tab3.utm_medium
         AND tab.utm_campaign = tab3.utm_campaign
-
 
 /* Шаг 4.29. Поиск убыточных рекламных кампаний по атрибуции last paid click.
 Дашборд: Убыточные рекламные кампании по атрибуции last paid click, рублей. */
