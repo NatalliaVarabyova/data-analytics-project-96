@@ -14,46 +14,30 @@ ORDER BY 1 ASC, 5 DESC;
 /* Шаг 4.2. Расчёт количества посетителей по источникам (объединённые) за месяц
 (для выявления наибольших источников). Дашборд: Количество пользователей по источникам. */
 
-WITH tab AS (
-    SELECT
-        source,
-        count(DISTINCT visitor_id) AS visitors_count
-    FROM sessions
-    GROUP BY 1
-),
-
-tab2 AS (
-    SELECT
-        *,
-        ntile(16) OVER (ORDER BY visitors_count) AS nt
-    FROM tab
-),
-
-tab3 AS (
-    SELECT
-        CASE
-            WHEN nt < 15 THEN 'other'
-            ELSE source
-        END AS source,
-        sum(visitors_count) AS visitors_count
-    FROM tab2
-    GROUP BY source, nt
-)
-
 SELECT
     source,
-    sum(visitors_count)
-FROM tab3
+    count(DISTINCT visitor_id) AS visitors_count
+FROM sessions
 GROUP BY 1
 ORDER BY 2 DESC;
 
 /* Шаг 4.3. Расчёт количества посетителей по источникам, принёсших наибольшее количество посетителей.
 Дашборд: Количество пользователей по источникам. */
 
+WITH tab AS (
+    SELECT
+        source,
+        count(DISTINCT visitor_id) AS visitors_count
+    FROM sessions
+    GROUP BY 1
+    ORDER BY 2 DESC
+    LIMIT 4
+)
+
 SELECT
     date_trunc('day', visit_date) AS visit_date,
     CASE
-        WHEN source IN ('google', 'organic', 'yandex', 'vk') THEN source
+        WHEN source IN (SELECT source FROM tab) THEN source
         ELSE 'other'
     END AS utm_source,
     medium AS utm_medium,
@@ -134,7 +118,7 @@ SELECT
     count(DISTINCT visitor_id) AS visitors_count
 FROM sessions
 GROUP BY 1, 2, 3, 4
-HAVING medium NOT LIKE '%organic%' AND "source" NOT IN ('vk', 'yandex')
+HAVING medium NOT LIKE '%organic%' AND source NOT IN ('vk', 'yandex')
 ORDER BY 5 DESC;
 
 /* Шаг 4.8. Расчёт коэффициента липучести. Дашборд: Коэффициент липучести. */
@@ -179,10 +163,20 @@ ORDER BY 4 ASC;
 /* Шаг 4.10. Расчёт количества лидов по источникам, принёсших наибольшее количество пользователей.
 Дашборд: Количество лидов по источникам.  */
 
+WITH tab AS (
+    SELECT
+        source,
+        count(DISTINCT visitor_id) AS visitors_count
+    FROM sessions
+    GROUP BY 1
+    ORDER BY 2 DESC
+    LIMIT 4
+)
+
 SELECT
     date_trunc('day', l.created_at) AS visit_date,
     CASE
-        WHEN s.source IN ('google', 'organic', 'yandex', 'vk') THEN s.source
+        WHEN s.source IN (SELECT source FROM tab) THEN s.source
         ELSE 'other'
     END AS utm_source,
     s.medium AS utm_medium,
@@ -339,22 +333,20 @@ ORDER BY 1, 2, 3, 4;
 /* Шаг 4.18. Создание view с рекламными расходами за весь месяц. */
 
 CREATE VIEW last_paid_monthly_costs_nv AS
-WITH vk_costs AS (
+WITH costs AS (
     SELECT
         utm_source,
         utm_medium,
         utm_campaign,
-        sum(daily_spent) AS vk_costs
+        sum(daily_spent) AS costs
     FROM vk_ads
     GROUP BY 1, 2, 3
-),
-
-ya_costs AS (
+    UNION ALL
     SELECT
         utm_source,
         utm_medium,
         utm_campaign,
-        sum(daily_spent) AS ya_costs
+        sum(daily_spent) AS costs
     FROM ya_ads
     GROUP BY 1, 2, 3
 )
@@ -367,19 +359,13 @@ SELECT
     lp.lead_id,
     lp.amount,
     lp.status_id,
-    vk.vk_costs,
-    ya.ya_costs
+    c.costs
 FROM last_paid_nv AS lp
-LEFT JOIN vk_costs AS vk
+LEFT JOIN costs AS c
     ON
-        lp.utm_source = vk.utm_source
-        AND lp.utm_medium = vk.utm_medium
-        AND lp.utm_campaign = vk.utm_campaign
-LEFT JOIN ya_costs AS ya
-    ON
-        lp.utm_source = ya.utm_source
-        AND lp.utm_medium = ya.utm_medium
-        AND lp.utm_campaign = ya.utm_campaign;
+        lp.utm_source = c.utm_source
+        AND lp.utm_medium = c.utm_medium
+        AND lp.utm_campaign = c.utm_campaign;
 
 /* Шаг 4.19. Создание view с расходами за месяц и с агрегированными данными, для расчёта прибыльности вложений. */
 
@@ -389,11 +375,7 @@ SELECT
     utm_medium,
     utm_campaign,
     count(DISTINCT visitor_id) AS visitors_count,
-    max(CASE
-        WHEN vk_costs IS NOT NULL THEN vk_costs
-        WHEN ya_costs IS NOT NULL THEN ya_costs
-        ELSE 0
-    END) AS total_cost,
+    max(costs) AS total_cost,
     count(DISTINCT lead_id) AS leads_count,
     sum(CASE
         WHEN status_id = 142 THEN 1
@@ -566,10 +548,37 @@ SELECT
     tab1.total_roi
 FROM tab, tab1;
 
-/* Шаг 4.28. Поиск даты начала рекламной кампании.
+/* Шаг 4.28. Поиск даты начала рекламных кампаний с низким ROI.
 Дашборд: Рекламные кампании с низким коэффициентом окупаемости инвестиций (ROI) по дате начала кампании по атрибуции last paid click, %. */
 
-WITH tab1 AS (
+WITH tab AS (
+    SELECT
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        round(
+            (coalesce(sum(revenue), 0) - sum(total_cost))
+            * 100.0
+            / sum(total_cost),
+            2
+        ) AS roi
+    FROM aggregate_monthly_costs
+    GROUP BY 1, 2, 3
+    HAVING sum(total_cost) > 0 AND (
+        round(
+            (coalesce(sum(revenue), 0) - sum(total_cost))
+            * 100.0
+            / sum(total_cost),
+            2) > 0 AND round(
+            (coalesce(sum(revenue), 0) - sum(total_cost))
+            * 100.0
+            / sum(total_cost),
+            2
+        ) < 200
+    )
+),
+
+tab1 AS (
     SELECT
         utm_source,
         utm_medium,
@@ -595,32 +604,35 @@ tab2 AS (
             )
         AS campaign_beginning
     FROM last_paid_costs_nv
+),
+
+tab3 AS (
+    SELECT DISTINCT ON (tab1.utm_source, tab1.utm_medium, tab1.utm_campaign)
+        tab2.campaign_beginning,
+        tab1.utm_source,
+        tab1.utm_medium,
+        tab1.utm_campaign,
+        tab1.leads_count,
+        tab1.client_count,
+        tab1.revenue,
+        tab1.total_cost,
+        tab1.net_revenue
+    FROM tab1
+    INNER JOIN tab2
+        ON
+            tab1.utm_source = tab2.utm_source
+            AND tab1.utm_medium = tab2.utm_medium
+            AND tab1.utm_campaign = tab2.utm_campaign
 )
 
-SELECT DISTINCT ON (tab1.utm_source, tab1.utm_medium, tab1.utm_campaign)
-    tab2.campaign_beginning,
-    tab1.utm_source,
-    tab1.utm_medium,
-    tab1.utm_campaign,
-    tab1.leads_count,
-    tab1.client_count,
-    tab1.revenue,
-    tab1.total_cost,
-    tab1.net_revenue
-FROM tab1
-INNER JOIN tab2
+SELECT tab3.*
+FROM tab
+INNER JOIN tab3
     ON
-        tab1.utm_source = tab2.utm_source
-        AND tab1.utm_medium = tab2.utm_medium
-        AND tab1.utm_campaign = tab2.utm_campaign
-WHERE
-    tab1.utm_campaign = 'base-python' AND tab1.utm_source = 'yandex'
-    OR tab1.utm_campaign = 'prof-python' AND tab1.utm_source = 'vk'
-    OR tab1.utm_campaign = 'prof-java' AND tab1.utm_source = 'vk'
-    OR tab1.utm_campaign = 'base-frontend' AND tab1.utm_source = 'yandex'
-    OR tab1.utm_campaign = 'prof-professions-brand'
-    AND tab1.utm_source = 'yandex'
-    OR tab1.utm_campaign = 'prof-data-analytics' AND tab1.utm_source = 'yandex';
+        tab.utm_source = tab3.utm_source
+        AND tab.utm_medium = tab3.utm_medium
+        AND tab.utm_campaign = tab3.utm_campaign
+
 
 /* Шаг 4.29. Поиск убыточных рекламных кампаний по атрибуции last paid click.
 Дашборд: Убыточные рекламные кампании по атрибуции last paid click, рублей. */

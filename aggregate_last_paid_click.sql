@@ -1,24 +1,22 @@
 /* Шаг 3.1. Создание view с рекламными расходами */
 
 CREATE VIEW last_paid_costs_nv AS
-WITH vk_costs AS (
+WITH costs AS (
     SELECT
         campaign_date,
         utm_source,
         utm_medium,
         utm_campaign,
-        sum(daily_spent) AS vk_daily_spent
+        sum(daily_spent) AS daily_spent
     FROM vk_ads
     GROUP BY 1, 2, 3, 4
-),
-
-ya_costs AS (
+    UNION ALL
     SELECT
         campaign_date,
         utm_source,
         utm_medium,
         utm_campaign,
-        sum(daily_spent) AS ya_daily_spent
+        sum(daily_spent) AS daily_spent
     FROM ya_ads
     GROUP BY 1, 2, 3, 4
 )
@@ -32,22 +30,14 @@ SELECT
     lp.lead_id,
     lp.amount,
     lp.status_id,
-    vk.vk_daily_spent,
-    ya.ya_daily_spent
+    c.daily_spent
 FROM last_paid_nv AS lp
-LEFT JOIN vk_costs AS vk
+LEFT JOIN costs AS c
     ON
-        date_trunc('day', lp.visit_date) = vk.campaign_date
-        AND lp.utm_source = vk.utm_source
-        AND lp.utm_medium = vk.utm_medium
-        AND lp.utm_campaign = vk.utm_campaign
-LEFT JOIN ya_costs AS ya
-    ON
-        date_trunc('day', lp.visit_date) = ya.campaign_date
-        AND lp.utm_source = ya.utm_source
-        AND lp.utm_medium = ya.utm_medium
-        AND lp.utm_campaign = ya.utm_campaign;
-
+        date_trunc('day', lp.visit_date) = c.campaign_date
+        AND lp.utm_source = c.utm_source
+        AND lp.utm_medium = c.utm_medium
+        AND lp.utm_campaign = c.utm_campaign;
 
 /* Шаг 3.2. Агрегация данных */
 
@@ -57,11 +47,7 @@ SELECT
     utm_medium,
     utm_campaign,
     count(visitor_id) AS visitors_count,
-    max(CASE
-        WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
-        WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
-        ELSE 0
-    END) AS total_cost,
+    max(daily_spent) AS total_cost,
     count(lead_id) AS leads_count,
     sum(CASE
         WHEN status_id = 142 THEN 1
@@ -82,11 +68,7 @@ SELECT
     utm_medium,
     utm_campaign,
     count(visitor_id) AS visitors_count,
-    max(CASE
-        WHEN vk_daily_spent IS NOT NULL THEN vk_daily_spent
-        WHEN ya_daily_spent IS NOT NULL THEN ya_daily_spent
-        ELSE 0
-    END) AS total_cost,
+    max(daily_spent) AS total_cost,
     count(lead_id) AS leads_count,
     sum(CASE
         WHEN status_id = 142 THEN 1
